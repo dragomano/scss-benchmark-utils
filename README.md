@@ -1,0 +1,67 @@
+# Benchmark suite for SCSS/Sass compilers
+
+![PHP](https://img.shields.io/badge/PHP-^8.2-blue.svg?style=flat)
+[![Coverage Status](https://coveralls.io/repos/github/dragomano/scss-benchmark-utils/badge.svg?branch=main)](https://coveralls.io/github/dragomano/scss-benchmark-utils?branch=main)
+
+---
+
+## Requirements
+
+- PHP >= 8.2
+
+---
+
+## Installation
+
+```bash
+composer require bugo/scss-benchmark-utils
+```
+
+## Usage examples
+
+### OsDetector
+
+Detects the current operating system:
+
+```php
+<?php
+
+use Bugo\BenchmarkUtils\OsDetector;
+
+$os = OsDetector::detect();
+// Windows: "Windows 11 24H2 (Build 26100.2033)"
+// Linux: "Linux 5.15.0-generic"
+// macOS: "Darwin 23.0.0"
+```
+
+### ScssGenerator
+
+Generates complex SCSS code for benchmarking compilers:
+
+```php
+<?php
+
+use Bugo\BenchmarkUtils\ScssGenerator;
+
+// Generate with default parameters (100 classes, 3 nested levels)
+$scss = ScssGenerator::generate();
+
+// Generate with custom parameters
+$scss = ScssGenerator::generate(
+    numClasses: 500,    // Number of classes to generate
+    nestedLevels: 5     // Depth of nesting
+);
+
+// Save to file for benchmarking
+file_put_contents('benchmark.scss', $scss);
+```
+
+The generated SCSS includes:
+- Variables with CSS functions (`abs()`, `round()`, `ceil()`, `floor()`)
+- Custom functions (`@function`)
+- Mixins (`@mixin`, `@include`)
+- Conditional statements (`@if`, `@else`)
+- Loops (`@for`, `@while`)
+- Color manipulation functions (`lighten()`, `darken()`, `saturate()`, `desaturate()`, `mix()`)
+- CSS comparison functions (`min()`, `max()`, `clamp()`)
+- Nested selectors with `&` parent selector

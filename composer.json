@@ -1,0 +1,39 @@
+{
+  "name": "bugo/scss-benchmark-utils",
+  "description": "Benchmark suite for SCSS/Sass compilers",
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Bugo",
+      "email": "bugo@dragomano.ru"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Bugo\\BenchmarkUtils\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Tests\\": "tests/"
+    }
+  },
+  "require": {
+    "php": "^8.2"
+  },
+  "require-dev": {
+    "pestphp/pest": "^3.8|^4.3"
+  },
+  "scripts": {
+    "tests": "vendor/bin/pest --colors=always --display-warnings",
+    "tests-coverage": "vendor/bin/pest --colors=always --coverage --min=98",
+    "tests-coverage-clover": "vendor/bin/pest --colors=always --min=98 --coverage-clover coverage.xml",
+    "tests-coverage-html": "vendor/bin/pest --colors=always --min=98 --coverage-html coverage"
+  },
+  "config": {
+    "allow-plugins": {
+      "pestphp/pest-plugin": true
+    }
+  }
+}
