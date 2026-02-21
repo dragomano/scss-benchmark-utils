@@ -116,6 +116,9 @@ class ScssGenerator
                 $scss .= str_repeat('  ', $level + 1) . 'background-color: lighten($secondary-color, ' . random_int(10, 30) . '%);' . PHP_EOL;
                 $scss .= str_repeat('  ', $level + 1) . '@include flex-center;' . PHP_EOL;
                 $scss .= str_repeat('  ', $level + 1) . 'transform: scale(calc(1 + ' . (random_int(1, 10) / 100) . '));' . PHP_EOL;
+            }
+
+            for ($level = $nestedLevels; $level >= 1; $level--) {
                 $scss .= str_repeat('  ', $level) . '}' . PHP_EOL;
             }
 
