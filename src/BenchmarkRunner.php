@@ -177,12 +177,12 @@ class BenchmarkRunner
     private function saveResults(string $name, string $css, ?string $sourceMap): void
     {
         $outputDir = $this->outputDir ?? __DIR__;
-        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$name}.css";
+        $package   = str_replace('/', '-', $name);
+        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css";
 
         file_put_contents($cssFile, $css, LOCK_EX);
 
         if ($sourceMap !== null) {
-            $package = str_replace('/', '-', $name);
             $mapFile = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css.map";
 
             file_put_contents($mapFile, $sourceMap, LOCK_EX);
@@ -192,7 +192,8 @@ class BenchmarkRunner
     private function getCssSize(string $name): ?float
     {
         $outputDir = $this->outputDir ?? __DIR__;
-        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$name}.css";
+        $package = str_replace('/', '-', $name);
+        $cssFile = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css";
 
         if (file_exists($cssFile)) {
             return filesize($cssFile) / 1024;

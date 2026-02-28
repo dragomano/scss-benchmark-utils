@@ -281,6 +281,18 @@ describe('run()', function () {
             ->and(file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'result-test-compiler.css'))->toContain('color: blue');
     });
 
+    test('handles compiler name with slash correctly', function () {
+        $runner = new BenchmarkRunner();
+        $runner->setScssCode('.test { color: red; }');
+        $runner->setRuns(1);
+        $runner->setWarmupRuns(0);
+        $runner->setOutputDir($this->tempDir);
+        $runner->addCompiler('vendor/package-name', fn () => $this->mockCompiler);
+        $runner->run();
+
+        expect($this->tempDir . DIRECTORY_SEPARATOR . 'result-vendor-package-name.css')->toBeFile();
+    });
+
     test('works with persistent mode compiler', function () {
         $runner = new BenchmarkRunner();
         $runner->setScssCode('.test { color: red; }');
