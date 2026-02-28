@@ -6,31 +6,46 @@ namespace Bugo\BenchmarkUtils;
 
 class OsDetector
 {
-    public static function detect(): string
+    public static function detect(string $osFamily = PHP_OS_FAMILY): string
     {
-        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+        if ($osFamily === 'Windows') {
             return self::getWindowsVersion();
         }
 
+        return self::defaultVersion();
+    }
+
+    private static function defaultVersion(): string
+    {
         return php_uname('s') . ' ' . php_uname('r');
     }
 
     private static function getWindowsVersion(): string
     {
         exec('cmd /c ver', $output);
-        $verOutput = implode("\n", $output);
 
+        return self::parseWindowsVersion(implode("\n", $output));
+    }
+
+    private static function parseWindowsVersion(string $verOutput): string
+    {
         if (! preg_match('/\[Version ([\d.]+)]/', $verOutput, $matches)) {
-            return php_uname('s') . ' ' . php_uname('r');
+            return self::defaultVersion();
         }
 
-        $build = $matches[1];
-        $buildNum = (int) explode('.', $build)[2];
+        $build    = $matches[1];
+        $parts    = explode('.', $build);
+        $buildNum = isset($parts[2]) ? (int) $parts[2] : 0;
 
-        $os = $buildNum >= 22000 ? 'Windows 11' : 'Windows 10';
+        $os      = self::getWindowsName($buildNum);
         $release = self::getWindowsRelease($buildNum);
 
         return $os . ' ' . $release . ' (Build ' . $build . ')';
+    }
+
+    private static function getWindowsName(int $buildNum): string
+    {
+        return $buildNum >= 22000 ? 'Windows 11' : 'Windows 10';
     }
 
     private static function getWindowsRelease(int $buildNum): string
@@ -42,7 +57,7 @@ class OsDetector
             $buildNum >= 22631 => '23H2',
             $buildNum >= 22621 => '22H2',
             $buildNum >= 22000 => '21H2',
-            default => 'Unknown',
+            default            => 'Unknown',
         };
     }
 }

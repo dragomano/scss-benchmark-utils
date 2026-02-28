@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Bugo\BenchmarkUtils\ScssGenerator;
 
 test('generate returns non-empty string', function () {

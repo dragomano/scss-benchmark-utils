@@ -23,13 +23,13 @@
     "php": "^8.2"
   },
   "require-dev": {
-    "pestphp/pest": "^3.8|^4.3"
+    "pestphp/pest": "^3.8|^4.4"
   },
   "scripts": {
-    "tests": "vendor/bin/pest --colors=always --display-warnings",
-    "tests-coverage": "vendor/bin/pest --colors=always --coverage --min=98",
-    "tests-coverage-clover": "vendor/bin/pest --colors=always --min=98 --coverage-clover coverage.xml",
-    "tests-coverage-html": "vendor/bin/pest --colors=always --min=98 --coverage-html coverage"
+    "test": "vendor/bin/pest --colors=always --display-warnings",
+    "test-coverage": "vendor/bin/pest --colors=always --coverage --min=98",
+    "test-coverage-clover": "vendor/bin/pest --colors=always --min=98 --coverage-clover coverage.xml",
+    "test-coverage-html": "vendor/bin/pest --colors=always --min=98 --coverage-html coverage"
   },
   "config": {
     "allow-plugins": {

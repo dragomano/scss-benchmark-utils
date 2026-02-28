@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Bugo\BenchmarkUtils\OsDetector;
 
 describe('detect()', function () {
@@ -28,7 +30,27 @@ describe('detect()', function () {
     test('detect returns unix information on non-windows', function () {
         expect($this->result)->toBe(php_uname('s') . ' ' . php_uname('r'));
     })->skipOnWindows();
+
+    test('detect returns unix information when os family is not windows', function () {
+        expect(OsDetector::detect('Linux'))->toBe(php_uname('s') . ' ' . php_uname('r'));
+    })->onlyOnWindows();
 });
+
+describe('parseWindowsVersion()', function () {
+    beforeEach(function () {
+        $this->method = new ReflectionMethod(OsDetector::class, 'parseWindowsVersion');
+    });
+
+    test('returns default version on invalid input', function () {
+        expect($this->method->invoke(null, 'invalid output'))
+            ->toBe(php_uname('s') . ' ' . php_uname('r'));
+    });
+
+    test('returns formatted windows version on valid input', function () {
+        expect($this->method->invoke(null, 'Microsoft Windows [Version 10.0.22621.1]'))
+            ->toBe('Windows 11 22H2 (Build 10.0.22621.1)');
+    });
+})->onlyOnWindows();
 
 describe('getWindowsRelease()', function () {
     beforeEach(function () {
