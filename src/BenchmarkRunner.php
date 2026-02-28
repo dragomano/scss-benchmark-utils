@@ -1,0 +1,241 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Bugo\BenchmarkUtils;
+
+use Exception;
+
+class BenchmarkRunner
+{
+    private array $compilers = [];
+
+    private int $runs = 10;
+
+    private int $warmupRuns = 2;
+
+    private int $trimCount = 2;
+
+    private ?string $outputDir = null;
+
+    private ?string $scssCode = null;
+
+    public function addCompiler(string $name, callable $factory): self
+    {
+        $this->compilers[$name] = $factory;
+
+        return $this;
+    }
+
+    public function setRuns(int $runs): self
+    {
+        $this->runs = $runs;
+
+        return $this;
+    }
+
+    public function setWarmupRuns(int $warmupRuns): self
+    {
+        $this->warmupRuns = $warmupRuns;
+
+        return $this;
+    }
+
+    public function setTrimCount(int $trimCount): self
+    {
+        $this->trimCount = $trimCount;
+
+        return $this;
+    }
+
+    public function setOutputDir(?string $dir): self
+    {
+        $this->outputDir = $dir;
+
+        return $this;
+    }
+
+    public function setScssCode(string $scss): self
+    {
+        $this->scssCode = $scss;
+
+        return $this;
+    }
+
+    public function run(): array
+    {
+        $results = [];
+
+        foreach ($this->compilers as $name => $factory) {
+            $results[$name] = $this->benchmarkCompiler($name, $factory);
+        }
+
+        return $results;
+    }
+
+    private function benchmarkCompiler(string $name, callable $factory): array
+    {
+        $times       = [];
+        $maxMemDelta = 0;
+        $css         = '';
+        $sourceMap   = null;
+
+        try {
+            $compiler = $factory();
+
+            $this->warmup($compiler, $name);
+
+            for ($i = 0; $i < $this->runs; $i++) {
+                gc_collect_cycles();
+
+                $memBefore = memory_get_usage();
+                $start     = hrtime(true);
+
+                $result    = $this->compile($compiler, $name, $i);
+                $css       = $result['css'] ?? $result;
+                $sourceMap = $result['sourceMap'] ?? null;
+
+                $times[]     = (hrtime(true) - $start) / 1e9;
+                $memAfter    = memory_get_usage();
+                $maxMemDelta = max($maxMemDelta, $memAfter - $memBefore);
+
+                unset($compiler);
+
+                $compiler = $factory();
+            }
+
+            $this->saveResults($name, $css, $sourceMap);
+
+            $times   = $this->processTimes($times);
+            $cssSize = $this->getCssSize($name);
+
+            return [
+                'time'   => $cssSize !== null ? array_sum($times) / count($times) : 'Error',
+                'size'   => $cssSize,
+                'memory' => $maxMemDelta / 1024 / 1024,
+            ];
+        } catch (Exception $e) {
+            return [
+                'time'   => 'Error: ' . $e->getMessage(),
+                'size'   => 'N/A',
+                'memory' => 'N/A',
+            ];
+        }
+    }
+
+    private function warmup(object $compiler, string $name): void
+    {
+        $scss = $this->scssCode ?? '';
+
+        for ($i = 0; $i < $this->warmupRuns; $i++) {
+            if (method_exists($compiler, 'compileInPersistentMode')) {
+                $compiler->compileInPersistentMode($scss);
+            } elseif (method_exists($compiler, 'compileString')) {
+                $compiler->compileString($scss);
+            }
+        }
+    }
+
+    private function compile(object $compiler, string $name, int $iteration): array
+    {
+        $scss = $this->scssCode ?? '';
+
+        if (method_exists($compiler, 'compileInPersistentMode')) {
+            return ['css' => $compiler->compileInPersistentMode($scss)];
+        }
+
+        if (method_exists($compiler, 'compileString')) {
+            $result = $compiler->compileString($scss);
+
+            if (is_object($result) && method_exists($result, 'getCss')) {
+                return [
+                    'css'       => $result->getCss(),
+                    'sourceMap' => method_exists($result, 'getSourceMap') ? $result->getSourceMap() : null,
+                ];
+            }
+
+            return ['css' => $result];
+        }
+
+        throw new Exception("Compiler {$name} does not support compileString or compileInPersistentMode");
+    }
+
+    private function processTimes(array $times): array
+    {
+        sort($times);
+
+        $trim = min($this->trimCount, intdiv(count($times) - 1, 2));
+
+        for ($i = 0; $i < $trim; $i++) {
+            array_shift($times);
+            array_pop($times);
+        }
+
+        return $times;
+    }
+
+    private function saveResults(string $name, string $css, ?string $sourceMap): void
+    {
+        $outputDir = $this->outputDir ?? __DIR__;
+        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$name}.css";
+
+        file_put_contents($cssFile, $css, LOCK_EX);
+
+        if ($sourceMap !== null) {
+            $package = str_replace('/', '-', $name);
+            $mapFile = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css.map";
+
+            file_put_contents($mapFile, $sourceMap, LOCK_EX);
+        }
+    }
+
+    private function getCssSize(string $name): ?float
+    {
+        $outputDir = $this->outputDir ?? __DIR__;
+        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$name}.css";
+
+        if (file_exists($cssFile)) {
+            return filesize($cssFile) / 1024;
+        }
+
+        return null;
+    }
+
+    public static function formatTable(array $results): string
+    {
+        $table = "| Compiler | Time (sec) | CSS Size (KB) | Memory (MB) |" . PHP_EOL;
+        $table .= "|------------|-------------|---------------|-------------|" . PHP_EOL;
+
+        foreach ($results as $name => $data) {
+            $timeStr = is_numeric($data['time']) ? number_format($data['time'], 4) : $data['time'];
+            $sizeStr = is_numeric($data['size']) ? number_format($data['size'], 2) : $data['size'];
+            $memStr  = is_numeric($data['memory']) ? number_format($data['memory'], 2) : $data['memory'];
+            $table .= "| {$name} | {$timeStr} | {$sizeStr} | {$memStr} |" . PHP_EOL;
+        }
+
+        return $table;
+    }
+
+    public static function updateMarkdownFile(string $filePath, array $results): void
+    {
+        if (!file_exists($filePath)) {
+            return;
+        }
+
+        $content = file_get_contents($filePath);
+        $content = preg_replace('/- \*\*OS\*\*: .+/', '- **OS**: ' . OsDetector::detect(), $content);
+        $content = preg_replace('/- \*\*PHP version\*\*: .+/', '- **PHP version**: ' . PHP_VERSION, $content);
+
+        $tableStart = strpos($content, '| Compiler');
+
+        if ($tableStart === false) {
+            return;
+        }
+
+        $tableOld = substr($content, $tableStart);
+        $newTable = self::formatTable($results);
+        $content  = str_replace($tableOld, $newTable, $content);
+
+        file_put_contents($filePath, $content);
+    }
+}
