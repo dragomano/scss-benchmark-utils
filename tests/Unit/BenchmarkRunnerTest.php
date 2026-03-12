@@ -71,7 +71,7 @@ beforeEach(function () {
     $this->mockFailingCompiler = new class {
         public function compileString(string $scss): void
         {
-            throw new \Exception('Compilation failed');
+            throw new Exception('Compilation failed');
         }
     };
 });
@@ -101,7 +101,7 @@ describe('BenchmarkRunner', function () {
     test('addCompiler returns self for fluent interface', function () {
         $runner = new BenchmarkRunner();
         $result = $runner->addCompiler('test-compiler', function () {
-            return new \stdClass();
+            return new stdClass();
         });
 
         expect($result)->toBe($runner);
@@ -223,7 +223,8 @@ MARKDOWN;
     });
 
     test('does not fail on missing file', function () {
-        expect(fn () => BenchmarkRunner::updateMarkdownFile('/nonexistent/file.md', []))->not->toThrow(\Exception::class);
+        expect(fn () => BenchmarkRunner::updateMarkdownFile('/nonexistent/file.md', []))
+            ->not->toThrow(Exception::class);
     });
 
     test('does not fail when table is missing', function () {
@@ -232,7 +233,8 @@ MARKDOWN;
 
         file_put_contents($filePath, $markdown);
 
-        expect(fn () => BenchmarkRunner::updateMarkdownFile($filePath, []))->not->toThrow(\Exception::class);
+        expect(fn () => BenchmarkRunner::updateMarkdownFile($filePath, []))
+            ->not->toThrow(Exception::class);
     });
 });
 
@@ -278,7 +280,8 @@ describe('run()', function () {
         $runner->run();
 
         expect($this->tempDir . DIRECTORY_SEPARATOR . 'result-test-compiler.css')->toBeFile()
-            ->and(file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'result-test-compiler.css'))->toContain('color: blue');
+            ->and(file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'result-test-compiler.css'))
+            ->toContain('color: blue');
     });
 
     test('handles compiler name with slash correctly', function () {
@@ -327,7 +330,7 @@ describe('run()', function () {
         $runner->setRuns(1);
         $runner->setWarmupRuns(0);
         $runner->setOutputDir($this->tempDir);
-        $runner->addCompiler('unsupported-compiler', fn () => new \stdClass());
+        $runner->addCompiler('unsupported-compiler', fn () => new stdClass());
 
         $results = $runner->run();
 
@@ -399,8 +402,7 @@ describe('run()', function () {
 
     test('processTimes trims outliers correctly', function () {
         $runner     = new BenchmarkRunner();
-        $reflection = new \ReflectionMethod($runner, 'processTimes');
-        $reflection->setAccessible(true);
+        $reflection = new ReflectionMethod($runner, 'processTimes');
 
         $times = [0.1, 0.2, 0.3, 0.4, 0.5, 1.0, 2.0];
         $runner->setTrimCount(2);
@@ -410,10 +412,18 @@ describe('run()', function () {
         expect($result)->toBe([0.3, 0.4, 0.5]);
     });
 
+    test('processTimes returns empty array when given empty array', function () {
+        $runner     = new BenchmarkRunner();
+        $reflection = new ReflectionMethod($runner, 'processTimes');
+
+        $result = $reflection->invoke($runner, []);
+
+        expect($result)->toBe([]);
+    });
+
     test('getCssSize returns null when file does not exist', function () {
         $runner     = new BenchmarkRunner();
-        $reflection = new \ReflectionMethod($runner, 'getCssSize');
-        $reflection->setAccessible(true);
+        $reflection = new ReflectionMethod($runner, 'getCssSize');
 
         $runner->setOutputDir('/nonexistent/directory');
 

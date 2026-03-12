@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Bugo\BenchmarkUtils;
 
-use Exception;
+use Throwable;
 
 class BenchmarkRunner
 {
@@ -83,25 +83,19 @@ class BenchmarkRunner
         try {
             $compiler = $factory();
 
-            $this->warmup($compiler, $name);
+            $this->warmup($compiler);
 
             for ($i = 0; $i < $this->runs; $i++) {
-                gc_collect_cycles();
-
                 $memBefore = memory_get_usage();
                 $start     = hrtime(true);
 
-                $result    = $this->compile($compiler, $name, $i);
+                $result    = $this->compile($compiler, $name);
                 $css       = $result['css'] ?? $result;
                 $sourceMap = $result['sourceMap'] ?? null;
 
                 $times[]     = (hrtime(true) - $start) / 1e9;
                 $memAfter    = memory_get_usage();
                 $maxMemDelta = max($maxMemDelta, $memAfter - $memBefore);
-
-                unset($compiler);
-
-                $compiler = $factory();
             }
 
             $this->saveResults($name, $css, $sourceMap);
@@ -114,7 +108,7 @@ class BenchmarkRunner
                 'size'   => $cssSize,
                 'memory' => $maxMemDelta / 1024 / 1024,
             ];
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             return [
                 'time'   => 'Error: ' . $e->getMessage(),
                 'size'   => 'N/A',
@@ -123,7 +117,7 @@ class BenchmarkRunner
         }
     }
 
-    private function warmup(object $compiler, string $name): void
+    private function warmup(object $compiler): void
     {
         $scss = $this->scssCode ?? '';
 
@@ -136,7 +130,7 @@ class BenchmarkRunner
         }
     }
 
-    private function compile(object $compiler, string $name, int $iteration): array
+    private function compile(object $compiler, string $name): array
     {
         $scss = $this->scssCode ?? '';
 
@@ -157,14 +151,19 @@ class BenchmarkRunner
             return ['css' => $result];
         }
 
-        throw new Exception("Compiler {$name} does not support compileString or compileInPersistentMode");
+        throw new UnsupportedCompilerException($name);
     }
 
     private function processTimes(array $times): array
     {
+        if (count($times) === 0) {
+            return $times;
+        }
+
         sort($times);
 
-        $trim = min($this->trimCount, intdiv(count($times) - 1, 2));
+        $maxTrim = (int) floor((count($times) - 1) / 2);
+        $trim    = min($this->trimCount, $maxTrim);
 
         for ($i = 0; $i < $trim; $i++) {
             array_shift($times);
@@ -178,12 +177,12 @@ class BenchmarkRunner
     {
         $outputDir = $this->outputDir ?? __DIR__;
         $package   = str_replace('/', '-', $name);
-        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css";
+        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-$package.css";
 
         file_put_contents($cssFile, $css, LOCK_EX);
 
         if ($sourceMap !== null) {
-            $mapFile = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css.map";
+            $mapFile = $outputDir . DIRECTORY_SEPARATOR . "result-$package.css.map";
 
             file_put_contents($mapFile, $sourceMap, LOCK_EX);
         }
@@ -192,8 +191,8 @@ class BenchmarkRunner
     private function getCssSize(string $name): ?float
     {
         $outputDir = $this->outputDir ?? __DIR__;
-        $package = str_replace('/', '-', $name);
-        $cssFile = $outputDir . DIRECTORY_SEPARATOR . "result-{$package}.css";
+        $package   = str_replace('/', '-', $name);
+        $cssFile   = $outputDir . DIRECTORY_SEPARATOR . "result-$package.css";
 
         if (file_exists($cssFile)) {
             return filesize($cssFile) / 1024;
@@ -211,7 +210,7 @@ class BenchmarkRunner
             $timeStr = is_numeric($data['time']) ? number_format($data['time'], 4) : $data['time'];
             $sizeStr = is_numeric($data['size']) ? number_format($data['size'], 2) : $data['size'];
             $memStr  = is_numeric($data['memory']) ? number_format($data['memory'], 2) : $data['memory'];
-            $table .= "| {$name} | {$timeStr} | {$sizeStr} | {$memStr} |" . PHP_EOL;
+            $table .= "| $name | $timeStr | $sizeStr | $memStr |" . PHP_EOL;
         }
 
         return $table;
@@ -219,7 +218,7 @@ class BenchmarkRunner
 
     public static function updateMarkdownFile(string $filePath, array $results): void
     {
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             return;
         }
 
