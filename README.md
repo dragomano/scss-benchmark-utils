@@ -38,6 +38,8 @@ $os = OsDetector::detect();
 
 Generates complex SCSS code for benchmarking compilers:
 
+The generator targets modern Sass implementations and includes CSS Color 4 syntax such as `hwb()`, `lab()`, `lch()`, `oklab()`, `oklch()`, and `color()` with spaces like `srgb`, `display-p3`, `rec2020`, and `xyz`.
+
 ```php
 <?php
 
@@ -99,6 +101,7 @@ The generated SCSS includes:
 - Conditional statements (`@if`, `@else`)
 - Loops (`@for`, `@while`)
 - Color manipulation functions (`lighten()`, `darken()`, `saturate()`, `desaturate()`, `mix()`)
+- Modern CSS Color 4 spaces (`rgb`, `hsl`, `hwb`, `lab`, `lch`, `oklab`, `oklch`, `color(srgb ...)`, `color(display-p3 ...)`, `color(rec2020 ...)`, `color(xyz ...)`)
 - CSS comparison functions (`min()`, `max()`, `clamp()`)
 - Nested selectors with `&` parent selector
 - Single-line comments (`//`) and multi-line comments (`/* */`)

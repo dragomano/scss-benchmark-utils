@@ -8,6 +8,26 @@ use Random\RandomException;
 
 class ScssGenerator
 {
+    private const MODERN_COLOR_SPACES = [
+        'rgb',
+        'hwb',
+        'hsl',
+        'srgb',
+        'srgb-linear',
+        'display-p3',
+        'display-p3-linear',
+        'a98-rgb',
+        'prophoto-rgb',
+        'rec2020',
+        'xyz',
+        'xyz-d50',
+        'xyz-d65',
+        'lab',
+        'lch',
+        'oklab',
+        'oklch',
+    ];
+
     /**
      * @throws RandomException
      */
@@ -182,7 +202,130 @@ class ScssGenerator
         $scss .= '  }' . PHP_EOL;
         $scss .= '}' . PHP_EOL . PHP_EOL;
 
+        $scss .= self::generateModernColorVariables();
+        $scss .= self::generateModernColorClasses();
+
         return $scss;
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function generateModernColorVariables(): string
+    {
+        $scss = '$modern-color-spaces: ' . implode(', ', self::MODERN_COLOR_SPACES) . ';' . PHP_EOL;
+
+        foreach (self::MODERN_COLOR_SPACES as $index => $space) {
+            $scss .= '$modern-color-' . $index . ': ' . self::generateColorBySpace($space) . ';' . PHP_EOL;
+        }
+
+        $scss .= PHP_EOL;
+
+        return $scss;
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function generateModernColorClasses(): string
+    {
+        $scss = '@for $i from 1 through length($modern-color-spaces) {' . PHP_EOL;
+        $scss .= '  $space: nth($modern-color-spaces, $i);' . PHP_EOL;
+        $scss .= '  $color: nth((';
+
+        foreach (array_keys(self::MODERN_COLOR_SPACES) as $index) {
+            $scss .= '$modern-color-' . $index . ', ';
+        }
+
+        $scss = rtrim($scss, ', ');
+        $scss .= '), $i);' . PHP_EOL;
+        $scss .= '  .modern-color-#{$i}-#{$space} {' . PHP_EOL;
+        $scss .= '    color: $color;' . PHP_EOL;
+        $scss .= '    background-color: $color;' . PHP_EOL;
+        $scss .= '    border-color: $color;' . PHP_EOL;
+        $scss .= '    outline: 1px solid $color;' . PHP_EOL;
+        $scss .= '    box-shadow: 0 0 0 2px $color;' . PHP_EOL;
+        $scss .= '  }' . PHP_EOL;
+        $scss .= '}' . PHP_EOL . PHP_EOL;
+
+        for ($i = 0; $i < 12; $i++) {
+            $scss .= '.random-modern-color-' . $i . ' {' . PHP_EOL;
+            $scss .= '  background-image: linear-gradient(135deg, ' . self::generateRandomColor() . ', ' . self::generateRandomColor() . ');' . PHP_EOL;
+            $scss .= '  border: 1px solid ' . self::generateRandomColor() . ';' . PHP_EOL;
+            $scss .= '  color: ' . self::generateRandomColor() . ';' . PHP_EOL;
+            $scss .= '}' . PHP_EOL . PHP_EOL;
+        }
+
+        return $scss;
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function generateRandomColor(): string
+    {
+        return self::generateColorBySpace(self::MODERN_COLOR_SPACES[array_rand(self::MODERN_COLOR_SPACES)]);
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function generateColorBySpace(string $space): string
+    {
+        return match ($space) {
+            'rgb' => 'rgb(' . random_int(0, 255) . ' ' . random_int(0, 255) . ' ' . random_int(0, 255) . ')',
+            'hwb' => 'hwb(' . self::randomAngle() . ' ' . self::randomPercent() . ' ' . self::randomPercent() . ')',
+            'hsl' => 'hsl(' . self::randomAngle() . ' ' . self::randomPercent() . ' ' . self::randomPercent() . ')',
+            'srgb',
+            'srgb-linear',
+            'display-p3',
+            'display-p3-linear',
+            'a98-rgb',
+            'prophoto-rgb',
+            'rec2020',
+            'xyz',
+            'xyz-d50',
+            'xyz-d65' => 'color(' . $space . ' ' . self::randomUnitChannel() . ' ' . self::randomUnitChannel() . ' ' . self::randomUnitChannel() . ')',
+            'lab' => 'lab(' . self::randomPercent() . ' ' . random_int(-125, 125) . ' ' . random_int(-125, 125) . ')',
+            'lch' => 'lch(' . self::randomPercent() . ' ' . self::randomFloat(0, 150, 1) . ' ' . self::randomAngle() . ')',
+            'oklab' => 'oklab(' . self::randomPercent() . ' ' . self::randomFloat(-0.4, 0.4, 3) . ' ' . self::randomFloat(-0.4, 0.4, 3) . ')',
+            'oklch' => 'oklch(' . self::randomPercent() . ' ' . self::randomFloat(0, 0.4, 3) . ' ' . self::randomAngle() . ')',
+        };
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function randomPercent(): string
+    {
+        return random_int(0, 100) . '%';
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function randomAngle(): string
+    {
+        return random_int(0, 360) . 'deg';
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function randomUnitChannel(): string
+    {
+        return self::randomFloat(0, 1, 3);
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function randomFloat(float $min, float $max, int $precision = 3): string
+    {
+        $scale = 10 ** $precision;
+        $value = random_int((int) round($min * $scale), (int) round($max * $scale)) / $scale;
+
+        return number_format($value, $precision, '.', '');
     }
 
     private static function generateWhileLoop(): string

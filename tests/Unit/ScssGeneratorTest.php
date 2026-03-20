@@ -65,7 +65,44 @@ test('generate contains color classes', function () {
     $result = ScssGenerator::generate();
 
     expect($result)->toContain('$color-names:')
-        ->and($result)->toContain('$color-values:');
+        ->and($result)->toContain('$color-values:')
+        ->and($result)->toContain('$modern-color-spaces:')
+        ->and($result)->toContain('.modern-color-')
+        ->and($result)->toContain('.random-modern-color-');
+});
+
+test('generate contains modern SCSS color spaces', function () {
+    $result = ScssGenerator::generate();
+
+    expect($result)->toContain('rgb(')
+        ->and($result)->toContain('hwb(')
+        ->and($result)->toContain('hsl(')
+        ->and($result)->toContain('color(srgb ')
+        ->and($result)->toContain('color(srgb-linear ')
+        ->and($result)->toContain('color(display-p3 ')
+        ->and($result)->toContain('color(display-p3-linear ')
+        ->and($result)->toContain('color(a98-rgb ')
+        ->and($result)->toContain('color(prophoto-rgb ')
+        ->and($result)->toContain('color(rec2020 ')
+        ->and($result)->toContain('color(xyz ')
+        ->and($result)->toContain('color(xyz-d50 ')
+        ->and($result)->toContain('color(xyz-d65 ')
+        ->and($result)->toContain('lab(')
+        ->and($result)->toContain('lch(')
+        ->and($result)->toContain('oklab(')
+        ->and($result)->toContain('oklch(');
+});
+
+test('generate creates expected number of modern color classes', function () {
+    $result = ScssGenerator::generate();
+
+    $modernColorVariableCount = preg_match_all('/\$modern-color-\d+:\s*/', $result);
+    $modernColorClassTemplateCount = substr_count($result, '.modern-color-#{$i}-#{$space}');
+    $randomModernColorClassCount = substr_count($result, '.random-modern-color-');
+
+    expect($modernColorVariableCount)->toBe(17)
+        ->and($modernColorClassTemplateCount)->toBe(1)
+        ->and($randomModernColorClassCount)->toBe(12);
 });
 
 test('generate with default parameters creates expected number of classes', function () {
