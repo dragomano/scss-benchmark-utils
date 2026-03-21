@@ -14,7 +14,9 @@ test('generate returns non-empty string', function () {
 test('generate contains variables', function () {
     $result = ScssGenerator::generate();
 
-    expect($result)->toContain('$primary-color:')
+    expect($result)->toContain(':root {')
+        ->and($result)->toContain('--rotation:')
+        ->and($result)->toContain('$primary-color:')
         ->and($result)->toContain('$secondary-color:')
         ->and($result)->toContain('$font-size:')
         ->and($result)->toContain('$border-radius:')
@@ -153,6 +155,8 @@ test('generate contains round ceil floor functions', function () {
     $result = ScssGenerator::generate();
 
     expect($result)->toContain('round(')
+        ->and($result)->toContain('font-size: round(clamp(')
+        ->and($result)->toContain('font-size: round(max(')
         ->and($result)->toContain('ceil(')
         ->and($result)->toContain('floor(');
 });

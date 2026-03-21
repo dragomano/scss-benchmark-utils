@@ -33,7 +33,8 @@ class ScssGenerator
      */
     public static function generate(int $numClasses = 100, int $nestedLevels = 3): string
     {
-        $scss = self::generateVariables();
+        $scss = self::generateRootCustomProperties();
+        $scss .= self::generateVariables();
         $scss .= self::generateComments();
         $scss .= self::generateFunctions();
         $scss .= self::generateMixins();
@@ -41,6 +42,18 @@ class ScssGenerator
         $scss .= self::generateForLoop();
         $scss .= self::generateColorClasses();
         $scss .= self::generateWhileLoop();
+
+        return $scss;
+    }
+
+    /**
+     * @throws RandomException
+     */
+    private static function generateRootCustomProperties(): string
+    {
+        $scss = ':root {' . PHP_EOL;
+        $scss .= '  --rotation: ' . self::randomAngle() . ';' . PHP_EOL;
+        $scss .= '}' . PHP_EOL . PHP_EOL;
 
         return $scss;
     }
@@ -131,7 +144,7 @@ class ScssGenerator
         for ($i = 0; $i < $numClasses; $i++) {
             $scss .= '.class-' . $i . ' {' . PHP_EOL;
             $scss .= '  background-color: mix($primary-color, $secondary-color, ' . random_int(20, 80) . '%);' . PHP_EOL;
-            $scss .= '  font-size: clamp($clamped-size, calculate-size($font-size, ' . (random_int(1, 3)) . '), 24px);' . PHP_EOL;
+            $scss .= '  font-size: round(clamp($clamped-size, calculate-size($font-size, ' . (random_int(1, 3)) . '), 24px));' . PHP_EOL;
             $scss .= '  padding: max($var' . random_int(0, 19) . ', $min-padding);' . PHP_EOL;
             $scss .= '  margin: calc($var' . random_int(0, 19) . ' + 5px);' . PHP_EOL;
             $scss .= '  border-radius: $border-radius;' . PHP_EOL;
@@ -185,6 +198,9 @@ class ScssGenerator
         return $scss;
     }
 
+    /**
+     * @throws RandomException
+     */
     private static function generateColorClasses(): string
     {
         $scss = '$color-names: red, green, blue, yellow, magenta, cyan;' . PHP_EOL;
@@ -288,8 +304,8 @@ class ScssGenerator
             'xyz-d65' => 'color(' . $space . ' ' . self::randomUnitChannel() . ' ' . self::randomUnitChannel() . ' ' . self::randomUnitChannel() . ')',
             'lab' => 'lab(' . self::randomPercent() . ' ' . random_int(-125, 125) . ' ' . random_int(-125, 125) . ')',
             'lch' => 'lch(' . self::randomPercent() . ' ' . self::randomFloat(0, 150, 1) . ' ' . self::randomAngle() . ')',
-            'oklab' => 'oklab(' . self::randomPercent() . ' ' . self::randomFloat(-0.4, 0.4, 3) . ' ' . self::randomFloat(-0.4, 0.4, 3) . ')',
-            'oklch' => 'oklch(' . self::randomPercent() . ' ' . self::randomFloat(0, 0.4, 3) . ' ' . self::randomAngle() . ')',
+            'oklab' => 'oklab(' . self::randomPercent() . ' ' . self::randomFloat(-0.4, 0.4) . ' ' . self::randomFloat(-0.4, 0.4) . ')',
+            'oklch' => 'oklch(' . self::randomPercent() . ' ' . self::randomFloat(0, 0.4) . ' ' . self::randomAngle() . ')',
         };
     }
 
@@ -314,7 +330,7 @@ class ScssGenerator
      */
     private static function randomUnitChannel(): string
     {
-        return self::randomFloat(0, 1, 3);
+        return self::randomFloat(0, 1);
     }
 
     /**
@@ -335,7 +351,7 @@ class ScssGenerator
         $scss .= '  .while-class-#{$counter} {' . PHP_EOL;
         $scss .= '    opacity: calc(0.1 * $counter);' . PHP_EOL;
         $scss .= '    z-index: $counter;' . PHP_EOL;
-        $scss .= '    font-size: max(10px, calc(8px + $counter * 0.5px));' . PHP_EOL;
+        $scss .= '    font-size: round(max(10px, calc(8px + $counter * 0.5px)));' . PHP_EOL;
         $scss .= '  }' . PHP_EOL;
         $scss .= '  $counter: $counter + 1;' . PHP_EOL;
         $scss .= '}' . PHP_EOL . PHP_EOL;
