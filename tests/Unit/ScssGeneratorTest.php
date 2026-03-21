@@ -155,7 +155,6 @@ test('generate contains round ceil floor functions', function () {
     $result = ScssGenerator::generate();
 
     expect($result)->toContain('round(')
-        ->and($result)->toContain('font-size: round(clamp(')
         ->and($result)->toContain('font-size: round(max(')
         ->and($result)->toContain('ceil(')
         ->and($result)->toContain('floor(');

@@ -144,7 +144,7 @@ class ScssGenerator
         for ($i = 0; $i < $numClasses; $i++) {
             $scss .= '.class-' . $i . ' {' . PHP_EOL;
             $scss .= '  background-color: mix($primary-color, $secondary-color, ' . random_int(20, 80) . '%);' . PHP_EOL;
-            $scss .= '  font-size: round(clamp($clamped-size, calculate-size($font-size, ' . (random_int(1, 3)) . '), 24px));' . PHP_EOL;
+            $scss .= '  font-size: clamp($clamped-size, calculate-size($font-size, ' . (random_int(1, 3)) . '), 24px);' . PHP_EOL;
             $scss .= '  padding: max($var' . random_int(0, 19) . ', $min-padding);' . PHP_EOL;
             $scss .= '  margin: calc($var' . random_int(0, 19) . ' + 5px);' . PHP_EOL;
             $scss .= '  border-radius: $border-radius;' . PHP_EOL;
