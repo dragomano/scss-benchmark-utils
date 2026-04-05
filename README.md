@@ -5,12 +5,6 @@
 
 ---
 
-## Requirements
-
-- PHP >= 8.2
-
----
-
 ## Installation
 
 ```bash
@@ -74,7 +68,8 @@ $scss = ScssGenerator::generate(200, 4);
 file_put_contents('generated.scss', $scss, LOCK_EX);
 
 $results = (new BenchmarkRunner())
-    ->setScssCode($scss)
+    ->setCode($scss)
+    ->setSourceFile(__DIR__ . '/generated.scss')
     ->setRuns(10)
     ->setWarmupRuns(2)
     ->setOutputDir(__DIR__)
@@ -95,6 +90,10 @@ BenchmarkRunner::updateMarkdownFile('benchmark.md', $results);
 ```
 
 The generated SCSS includes:
+
+- Single-line comments (`//`) and multi-line comments (`/* */`)
+- Important comments (`/*!`)
+- Interpolated comments
 - Variables with CSS functions (`abs()`, `round()`, `ceil()`, `floor()`)
 - Custom functions (`@function`)
 - Mixins (`@mixin`, `@include`)
@@ -104,6 +103,4 @@ The generated SCSS includes:
 - Modern CSS Color 4 spaces (`rgb`, `hsl`, `hwb`, `lab`, `lch`, `oklab`, `oklch`, `color(srgb ...)`, `color(display-p3 ...)`, `color(rec2020 ...)`, `color(xyz ...)`)
 - CSS comparison functions (`min()`, `max()`, `clamp()`)
 - Nested selectors with `&` parent selector
-- Single-line comments (`//`) and multi-line comments (`/* */`)
-- Important comments (`/*!`)
-- Interpolated comments
+
