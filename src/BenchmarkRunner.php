@@ -180,12 +180,22 @@ class BenchmarkRunner
 
     private function warmup(object $compiler): void
     {
+        $file = $this->sourceFile ?? '';
+
+        if ($file) {
+            for ($i = 0; $i < $this->warmupRuns; $i++) {
+                if (method_exists($compiler, 'compileFile')) {
+                    $compiler->compileFile($file);
+                }
+            }
+
+            return;
+        }
+
         $scss = $this->code ?? '';
 
         for ($i = 0; $i < $this->warmupRuns; $i++) {
-            if (method_exists($compiler, 'compileInPersistentMode')) {
-                $compiler->compileInPersistentMode($scss);
-            } elseif (method_exists($compiler, 'compileString')) {
+            if (method_exists($compiler, 'compileString')) {
                 $compiler->compileString($scss);
             }
         }
@@ -193,26 +203,33 @@ class BenchmarkRunner
 
     private function compile(object $compiler, string $name, bool $includeSourceMap = true): array
     {
-        $scss = $this->code ?? '';
+        $file = $this->sourceFile ?? '';
 
-        if (method_exists($compiler, 'compileInPersistentMode')) {
-            return ['css' => $compiler->compileInPersistentMode($scss)];
+        if ($file && method_exists($compiler, 'compileFile')) {
+            return $this->normalizeCompileResult($compiler->compileFile($file), $includeSourceMap);
         }
 
+        $scss = $this->code ?? '';
+
         if (method_exists($compiler, 'compileString')) {
-            $result = $compiler->compileString($scss);
-
-            if (is_object($result) && method_exists($result, 'getCss')) {
-                return [
-                    'css'       => $result->getCss(),
-                    'sourceMap' => $includeSourceMap && method_exists($result, 'getSourceMap') ? $result->getSourceMap() : null,
-                ];
-            }
-
-            return ['css' => $result];
+            return $this->normalizeCompileResult($compiler->compileString($scss), $includeSourceMap);
         }
 
         throw new UnsupportedCompilerException($name);
+    }
+
+    private function normalizeCompileResult(mixed $result, bool $includeSourceMap): array
+    {
+        if (is_object($result) && method_exists($result, 'getCss')) {
+            return [
+                'css'       => $result->getCss(),
+                'sourceMap' => $includeSourceMap && method_exists($result, 'getSourceMap')
+                    ? $result->getSourceMap()
+                    : null,
+            ];
+        }
+
+        return ['css' => $result];
     }
 
     private function shouldSaveSourceMap(string $name): bool

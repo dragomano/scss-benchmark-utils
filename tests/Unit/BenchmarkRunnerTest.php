@@ -64,20 +64,6 @@ namespace {
             }
         };
 
-        $this->mockPersistentCompiler = new class ('.test { color: purple; }') {
-            private string $css;
-
-            public function __construct(string $css)
-            {
-                $this->css = $css;
-            }
-
-            public function compileInPersistentMode(string $scss): string
-            {
-                return $this->css;
-            }
-        };
-
         $this->mockCompilerWithResultObject = new class ('.test { color: orange; }') {
             private string $css;
 
@@ -354,20 +340,6 @@ namespace {
             expect($this->tempDir . DIRECTORY_SEPARATOR . 'result-vendor-package-name.css')->toBeFile();
         });
 
-        test('works with persistent mode compiler', function () {
-            $runner = new BenchmarkRunner();
-            $runner->setCode('.test { color: red; }');
-            $runner->setRuns(1);
-            $runner->setWarmupRuns(0);
-            $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('persistent-compiler', fn () => $this->mockPersistentCompiler);
-
-            $results = $runner->run();
-
-            expect($results)->toHaveKey('persistent-compiler')
-                ->and($results['persistent-compiler']['time'])->toBeNumeric();
-        });
-
         test('handles compiler exception gracefully', function () {
             $runner = new BenchmarkRunner();
             $runner->setCode('.test { color: red; }');
@@ -396,38 +368,7 @@ namespace {
                 ->and($results['unsupported-compiler']['time'])->toContain('Error');
         });
 
-        test('warmup runs compileInPersistentMode when available', function () {
-            $runner = new BenchmarkRunner();
-            $runner->setCode('.test { color: red; }');
-            $runner->setRuns(1);
-            $runner->setWarmupRuns(2);
-            $runner->setOutputDir($this->tempDir);
-
-            $persistentCompiler = new class ('.test { color: purple; }') {
-                public int $compileCount = 0;
-
-                private string $css;
-
-                public function __construct(string $css)
-                {
-                    $this->css = $css;
-                }
-
-                public function compileInPersistentMode(string $scss): string
-                {
-                    $this->compileCount++;
-
-                    return $this->css;
-                }
-            };
-
-            $runner->addCompiler('warmup-test', fn () => $persistentCompiler);
-            $runner->run();
-
-            expect($persistentCompiler->compileCount)->toBe(3);
-        });
-
-        test('warmup runs compileString when compileInPersistentMode is not available', function () {
+        test('warmup runs compileString', function () {
             $runner = new BenchmarkRunner();
             $runner->setCode('.test { color: red; }');
             $runner->setRuns(1);
@@ -456,6 +397,77 @@ namespace {
             $runner->run();
 
             expect($mockCompiler->compileCount)->toBe(3);
+        });
+
+        test('warmup and compile use compileFile when source file is provided', function () {
+            $runner     = new BenchmarkRunner();
+            $sourceFile = $this->tempDir . '/input.scss';
+
+            file_put_contents($sourceFile, '.test { color: red; }');
+
+            $runner->setSourceFile($sourceFile);
+            $runner->setRuns(1);
+            $runner->setWarmupRuns(2);
+            $runner->setOutputDir($this->tempDir);
+
+            $mockCompiler = new class {
+                public int $compileCount = 0;
+
+                public function compileFile(string $file): object
+                {
+                    $this->compileCount++;
+
+                    return new class {
+                        public function getCss(): string
+                        {
+                            return '.test { color: green; }';
+                        }
+
+                        public function getSourceMap(): ?string
+                        {
+                            return '{"sources": ["input.scss"]}';
+                        }
+                    };
+                }
+            };
+
+            $runner->addCompiler('file-object-compiler', fn () => $mockCompiler);
+
+            $results = $runner->run();
+
+            expect($mockCompiler->compileCount)->toBe(3)
+                ->and($results)->toHaveKey('file-object-compiler')
+                ->and($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-object-compiler.css')->toBeFile()
+                ->and($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-object-compiler.css.map')->toBeFile()
+                ->and(file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-object-compiler.css.map'))
+                ->toBe('{"sources": ["input.scss"]}');
+        });
+
+        test('compileFile supports plain string results', function () {
+            $runner     = new BenchmarkRunner();
+            $sourceFile = $this->tempDir . '/input.scss';
+
+            file_put_contents($sourceFile, '.test { color: red; }');
+
+            $runner
+                ->setSourceFile($sourceFile)
+                ->setRuns(1)
+                ->setWarmupRuns(0)
+                ->setOutputDir($this->tempDir)
+                ->addCompiler('file-string-compiler', fn () => new class {
+                    public function compileFile(string $file): string
+                    {
+                        return '.test { color: black; }';
+                    }
+                });
+
+            $results = $runner->run();
+
+            expect($results)->toHaveKey('file-string-compiler')
+                ->and($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-string-compiler.css')->toBeFile()
+                ->and($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-string-compiler.css.map')->not->toBeFile()
+                ->and(file_get_contents($this->tempDir . DIRECTORY_SEPARATOR . 'result-file-string-compiler.css'))
+                ->toContain('color: black');
         });
 
         test('processTimes trims outliers correctly', function () {
