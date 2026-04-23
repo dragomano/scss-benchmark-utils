@@ -71,18 +71,6 @@ class BenchmarkRunner
         return $this;
     }
 
-    /* @deprecated */
-    public function setScssCode(string $scss): self
-    {
-        return $this->setCode($scss);
-    }
-
-    /* @deprecated */
-    public function setScssSourceFile(?string $file): self
-    {
-        return $this->setSourceFile($file);
-    }
-
     public function run(): array
     {
         $results = [];

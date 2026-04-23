@@ -177,15 +177,6 @@ namespace {
 
             expect($result)->toBe($runner);
         });
-
-        test('legacy scss-specific setters remain available', function () {
-            $runner = new BenchmarkRunner();
-            $result = $runner
-                ->setScssCode('$primary: #fff; .test { color: $primary; }')
-                ->setScssSourceFile($this->tempDir . '/input.scss');
-
-            expect($result)->toBe($runner);
-        });
     });
 
     describe('formatTable()', function () {
