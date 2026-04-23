@@ -52,12 +52,7 @@ namespace {
         mkdir($this->tempDir, 0755, true);
 
         $this->mockCompiler = new class ('.test { color: blue; }') {
-            private string $css;
-
-            public function __construct(string $css)
-            {
-                $this->css = $css;
-            }
+            public function __construct(private readonly string $css) {}
 
             public function compileString(string $scss): string
             {
@@ -66,29 +61,19 @@ namespace {
         };
 
         $this->mockCompilerWithResultObject = new class ('.test { color: orange; }') {
-            private string $css;
-
-            public function __construct(string $css)
-            {
-                $this->css = $css;
-            }
+            public function __construct(private readonly string $css) {}
 
             public function compileString(string $scss): object
             {
                 return new class ($this->css) {
-                    private string $css;
-
-                    public function __construct(string $css)
-                    {
-                        $this->css = $css;
-                    }
+                    public function __construct(private readonly string $css) {}
 
                     public function getCss(): string
                     {
                         return $this->css;
                     }
 
-                    public function getSourceMap(): ?string
+                    public function getSourceMap(): string
                     {
                         return '{"sources": ["test.scss"]}';
                     }
@@ -97,7 +82,7 @@ namespace {
         };
 
         $this->mockFailingCompiler = new class {
-            public function compileString(string $scss): void
+            public function compileString(string $scss): never
             {
                 throw new Exception('Compilation failed');
             }
@@ -129,9 +114,7 @@ namespace {
     describe('BenchmarkRunner', function () {
         test('addCompiler returns self for fluent interface', function () {
             $runner = new BenchmarkRunner();
-            $result = $runner->addCompiler('test-compiler', function () {
-                return new stdClass();
-            });
+            $result = $runner->addCompiler('test-compiler', fn() => new stdClass());
 
             expect($result)->toBe($runner);
         });
@@ -280,7 +263,7 @@ namespace {
             $runner->setRuns(1);
             $runner->setWarmupRuns(0);
             $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('test-compiler', fn () => $this->mockCompiler);
+            $runner->addCompiler('test-compiler', fn() => $this->mockCompiler);
             $runner->run();
 
             expect($this->tempDir . DIRECTORY_SEPARATOR . 'result-test-compiler.css')->toBeFile()
@@ -294,7 +277,7 @@ namespace {
             $runner->setRuns(1);
             $runner->setWarmupRuns(0);
             $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('vendor/package-name', fn () => $this->mockCompiler);
+            $runner->addCompiler('vendor/package-name', fn() => $this->mockCompiler);
             $runner->run();
 
             expect($this->tempDir . DIRECTORY_SEPARATOR . 'result-vendor-package-name.css')->toBeFile();
@@ -306,7 +289,7 @@ namespace {
             $runner->setRuns(1);
             $runner->setWarmupRuns(0);
             $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('failing-compiler', fn () => $this->mockFailingCompiler);
+            $runner->addCompiler('failing-compiler', fn() => $this->mockFailingCompiler);
 
             $results = $runner->run();
 
@@ -320,7 +303,7 @@ namespace {
             $runner->setRuns(1);
             $runner->setWarmupRuns(0);
             $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('unsupported-compiler', fn () => new stdClass());
+            $runner->addCompiler('unsupported-compiler', fn() => new stdClass());
 
             $results = $runner->run();
 
@@ -338,12 +321,7 @@ namespace {
             $mockCompiler = new class ('.test { color: blue; }') {
                 public int $compileCount = 0;
 
-                private string $css;
-
-                public function __construct(string $css)
-                {
-                    $this->css = $css;
-                }
+                public function __construct(private readonly string $css) {}
 
                 public function compileString(string $scss): string
                 {
@@ -353,7 +331,7 @@ namespace {
                 }
             };
 
-            $runner->addCompiler('warmup-string-test', fn () => $mockCompiler);
+            $runner->addCompiler('warmup-string-test', fn() => $mockCompiler);
             $runner->run();
 
             expect($mockCompiler->compileCount)->toBe(3);
@@ -383,7 +361,7 @@ namespace {
                             return '.test { color: green; }';
                         }
 
-                        public function getSourceMap(): ?string
+                        public function getSourceMap(): string
                         {
                             return '{"sources": ["input.scss"]}';
                         }
@@ -391,7 +369,7 @@ namespace {
                 }
             };
 
-            $runner->addCompiler('file-object-compiler', fn () => $mockCompiler);
+            $runner->addCompiler('file-object-compiler', fn() => $mockCompiler);
 
             $results = $runner->run();
 
@@ -414,7 +392,7 @@ namespace {
                 ->setRuns(1)
                 ->setWarmupRuns(0)
                 ->setOutputDir($this->tempDir)
-                ->addCompiler('file-string-compiler', fn () => new class {
+                ->addCompiler('file-string-compiler', fn() => new class {
                     public function compileFile(string $file): string
                     {
                         return '.test { color: black; }';
@@ -468,7 +446,7 @@ namespace {
             $runner->setRuns(1);
             $runner->setWarmupRuns(0);
             $runner->setOutputDir($this->tempDir);
-            $runner->addCompiler('object-compiler', fn () => $this->mockCompilerWithResultObject);
+            $runner->addCompiler('object-compiler', fn() => $this->mockCompilerWithResultObject);
 
             $results = $runner->run();
 
@@ -493,7 +471,7 @@ namespace {
                 ->setRuns(3)
                 ->setWarmupRuns(2)
                 ->setOutputDir($this->tempDir)
-                ->addCompiler('object-compiler', fn () => $this->mockCompilerWithResultObject);
+                ->addCompiler('object-compiler', fn() => $this->mockCompilerWithResultObject);
 
             $runner->run();
 
@@ -517,7 +495,7 @@ namespace {
                 ->setRuns(3)
                 ->setWarmupRuns(2)
                 ->setOutputDir($this->tempDir)
-                ->addCompiler('object-compiler', fn () => $this->mockCompilerWithResultObject);
+                ->addCompiler('object-compiler', fn() => $this->mockCompilerWithResultObject);
 
             $runner->run();
 
@@ -535,7 +513,7 @@ namespace {
                 ->setRuns(1)
                 ->setWarmupRuns(0)
                 ->setOutputDir($this->tempDir)
-                ->addCompiler('object-compiler', fn () => $this->mockCompilerWithResultObject);
+                ->addCompiler('object-compiler', fn() => $this->mockCompilerWithResultObject);
 
             $runner->run();
 
@@ -558,7 +536,7 @@ namespace {
                 ->setRuns(1)
                 ->setWarmupRuns(0)
                 ->setOutputDir($this->tempDir)
-                ->addCompiler('object-compiler', fn () => $this->mockCompilerWithResultObject);
+                ->addCompiler('object-compiler', fn() => $this->mockCompilerWithResultObject);
 
             $runner->run();
 
@@ -574,7 +552,7 @@ namespace {
                 ->setOutputDir('/tmp')
                 ->setCode('$var: 1;')
                 ->setSourceFile('/tmp/input.scss')
-                ->addCompiler('test/compiler', fn () => $this->mockCompiler);
+                ->addCompiler('test/compiler', fn() => $this->mockCompiler);
 
             expect($result)->toBeInstanceOf(BenchmarkRunner::class);
         });

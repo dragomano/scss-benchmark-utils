@@ -41,9 +41,8 @@ class ScssGenerator
         $scss .= self::generateClasses($numClasses, $nestedLevels);
         $scss .= self::generateForLoop();
         $scss .= self::generateColorClasses();
-        $scss .= self::generateWhileLoop();
 
-        return $scss;
+        return $scss . self::generateWhileLoop();
     }
 
     /**
@@ -53,9 +52,8 @@ class ScssGenerator
     {
         $scss = ':root {' . PHP_EOL;
         $scss .= '  --rotation: ' . self::randomAngle() . ';' . PHP_EOL;
-        $scss .= '}' . PHP_EOL . PHP_EOL;
 
-        return $scss;
+        return $scss . ('}' . PHP_EOL . PHP_EOL);
     }
 
     /**
@@ -79,9 +77,7 @@ class ScssGenerator
             $scss .= '$floored-var' . $i . ': ' . 'floor(' . (random_int(0, 100) / 1.8) . 'px);' . PHP_EOL;
         }
 
-        $scss .= PHP_EOL;
-
-        return $scss;
+        return $scss . PHP_EOL;
     }
 
     private static function generateComments(): string
@@ -90,18 +86,16 @@ class ScssGenerator
         $scss .= '/* Regular block comment */' . PHP_EOL;
         $scss .= '/* Interpolated block comment: #{$primary-color} */' . PHP_EOL;
         $scss .= '/*! Important block comment */' . PHP_EOL;
-        $scss .= '/*! Interpolated important comment: #{$secondary-color} */' . PHP_EOL;
 
-        return $scss;
+        return $scss . ('/*! Interpolated important comment: #{$secondary-color} */' . PHP_EOL);
     }
 
     private static function generateFunctions(): string
     {
         $scss = '@function calculate-size($base, $multiplier: 1) {' . PHP_EOL;
         $scss .= '  @return $base * $multiplier;' . PHP_EOL;
-        $scss .= '}' . PHP_EOL . PHP_EOL;
 
-        return $scss;
+        return $scss . ('}' . PHP_EOL . PHP_EOL);
     }
 
     private static function generateMixins(): string
@@ -129,9 +123,8 @@ class ScssGenerator
         $scss .= '  .saturated { color: saturate($base-color, 30%); }' . PHP_EOL;
         $scss .= '  .desaturated { color: desaturate($base-color, 25%); }' . PHP_EOL;
         $scss .= '  .hue-rotated { filter: hue-rotate(45deg); }' . PHP_EOL;
-        $scss .= '}' . PHP_EOL . PHP_EOL;
 
-        return $scss;
+        return $scss . ('}' . PHP_EOL . PHP_EOL);
     }
 
     /**
@@ -193,9 +186,8 @@ class ScssGenerator
         $scss .= '    border-radius: clamp(3px, calc($i * 2px), 15px);' . PHP_EOL;
         $scss .= '    filter: hue-rotate(calc($i * 18deg));' . PHP_EOL;
         $scss .= '  }' . PHP_EOL;
-        $scss .= '}' . PHP_EOL . PHP_EOL;
 
-        return $scss;
+        return $scss . ('}' . PHP_EOL . PHP_EOL);
     }
 
     /**
@@ -219,9 +211,8 @@ class ScssGenerator
         $scss .= '}' . PHP_EOL . PHP_EOL;
 
         $scss .= self::generateModernColorVariables();
-        $scss .= self::generateModernColorClasses();
 
-        return $scss;
+        return $scss . self::generateModernColorClasses();
     }
 
     /**
@@ -235,9 +226,7 @@ class ScssGenerator
             $scss .= '$modern-color-' . $index . ': ' . self::generateColorBySpace($space) . ';' . PHP_EOL;
         }
 
-        $scss .= PHP_EOL;
-
-        return $scss;
+        return $scss . PHP_EOL;
     }
 
     /**
@@ -354,8 +343,7 @@ class ScssGenerator
         $scss .= '    font-size: round(max(10px, calc(8px + $counter * 0.5px)));' . PHP_EOL;
         $scss .= '  }' . PHP_EOL;
         $scss .= '  $counter: $counter + 1;' . PHP_EOL;
-        $scss .= '}' . PHP_EOL . PHP_EOL;
 
-        return $scss;
+        return $scss . ('}' . PHP_EOL . PHP_EOL);
     }
 }

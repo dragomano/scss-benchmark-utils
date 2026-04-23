@@ -96,7 +96,7 @@ namespace {
             });
 
             test('does not fail on missing file', function () {
-                expect(fn () => ReportGenerator::updateMarkdownFile('/nonexistent/file.md', []))
+                expect(fn() => ReportGenerator::updateMarkdownFile('/nonexistent/file.md', []))
                     ->not->toThrow(Exception::class);
             });
 
@@ -106,7 +106,7 @@ namespace {
 
                 file_put_contents($filePath, $markdown);
 
-                expect(fn () => ReportGenerator::updateMarkdownFile($filePath, []))
+                expect(fn() => ReportGenerator::updateMarkdownFile($filePath, []))
                     ->not->toThrow(Exception::class);
             });
         });

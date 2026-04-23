@@ -35,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: composer install
 
+      - name: Run rector
+        run: composer rector
+
+      - name: Run pint
+        run: composer pint
+
       - name: Run tests
         shell: bash
         run: |

@@ -29,15 +29,15 @@ class ReportGenerator
 
         $content = file_get_contents($filePath);
         $content = preg_replace('/- \*\*OS\*\*: .+/', '- **OS**: ' . OsDetector::detect(), $content);
-        $content = preg_replace('/- \*\*PHP version\*\*: .+/', '- **PHP version**: ' . PHP_VERSION, $content);
+        $content = preg_replace('/- \*\*PHP version\*\*: .+/', '- **PHP version**: ' . PHP_VERSION, (string) $content);
 
-        $tableStart = strpos($content, '| Compiler');
+        $tableStart = strpos((string) $content, '| Compiler');
 
         if ($tableStart === false) {
             return;
         }
 
-        $tableOld = substr($content, $tableStart);
+        $tableOld = substr((string) $content, $tableStart);
         $newTable = self::formatTable($results);
         $content  = str_replace($tableOld, $newTable, $content);
 

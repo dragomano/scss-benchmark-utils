@@ -10,6 +10,6 @@ final class UnsupportedCompilerException extends RuntimeException
 {
     public function __construct(string $name)
     {
-        parent::__construct("Compiler $name does not support compileString or compileInPersistentMode");
+        parent::__construct("Compiler $name does not support compileFile or compileString");
     }
 }

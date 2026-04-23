@@ -23,9 +23,14 @@
     "php": "^8.2"
   },
   "require-dev": {
-    "pestphp/pest": "^3.8|^4.4"
+    "laravel/pint": "^1.29",
+    "pestphp/pest": "^3.8|^4.6",
+    "rector/rector": "^2.4"
   },
   "scripts": {
+    "check": "vendor/bin/rector process --dry-run --clear-cache",
+    "rector": "vendor/bin/rector process",
+    "pint": "vendor/bin/pint --parallel --preset per",
     "test": "vendor/bin/pest --colors=always --display-warnings",
     "test-coverage": "vendor/bin/pest --colors=always --coverage --min=100",
     "test-coverage-clover": "vendor/bin/pest --colors=always --min=100 --coverage-clover coverage.xml",
