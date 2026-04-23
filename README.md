@@ -59,8 +59,9 @@ Run benchmarks for multiple SCSS compilers:
 ```php
 <?php
 
-use Bugo\BenchmarkUtils\ScssGenerator;
 use Bugo\BenchmarkUtils\BenchmarkRunner;
+use Bugo\BenchmarkUtils\ReportGenerator;
+use Bugo\BenchmarkUtils\ScssGenerator;
 use ScssPhp\ScssPhp\Compiler as ScssCompiler;
 use ScssPhp\ScssPhp\OutputStyle;
 
@@ -84,9 +85,9 @@ $results = (new BenchmarkRunner())
     })
     ->run();
 
-echo BenchmarkRunner::formatTable($results);
+echo ReportGenerator::formatTable($results);
 
-BenchmarkRunner::updateMarkdownFile('benchmark.md', $results);
+ReportGenerator::updateMarkdownFile('benchmark.md', $results);
 ```
 
 The generated SCSS includes:
@@ -103,4 +104,3 @@ The generated SCSS includes:
 - Modern CSS Color 4 spaces (`rgb`, `hsl`, `hwb`, `lab`, `lch`, `oklab`, `oklch`, `color(srgb ...)`, `color(display-p3 ...)`, `color(rec2020 ...)`, `color(xyz ...)`)
 - CSS comparison functions (`min()`, `max()`, `clamp()`)
 - Nested selectors with `&` parent selector
-

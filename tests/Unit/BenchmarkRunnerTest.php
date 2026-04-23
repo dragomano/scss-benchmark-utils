@@ -43,6 +43,7 @@ namespace Bugo\BenchmarkUtils {
 
 namespace {
     use Bugo\BenchmarkUtils\BenchmarkRunner;
+    use Bugo\BenchmarkUtils\ReportGenerator;
     use Bugo\BenchmarkUtils\BenchmarkRunnerFileMtimeShim;
 
     beforeEach(function () {
@@ -188,7 +189,7 @@ namespace {
     });
 
     describe('formatTable()', function () {
-        test('formats numeric results correctly', function () {
+        test('delegates to ReportGenerator', function () {
             $results = [
                 'test/compiler-a' => [
                     'time'   => 0.1234,
@@ -204,30 +205,12 @@ namespace {
 
             $table = BenchmarkRunner::formatTable($results);
 
-            expect($table)->toContain('| Compiler | Time (sec) | CSS Size (KB) | Memory (MB) |')
-                ->toContain('test/compiler-a')
-                ->toContain('test/compiler-b');
-        });
-
-        test('formats error results correctly', function () {
-            $results = [
-                'test/compiler-error' => [
-                    'time'   => 'Error: compilation failed',
-                    'size'   => 'N/A',
-                    'memory' => 'N/A',
-                ],
-            ];
-
-            $table = BenchmarkRunner::formatTable($results);
-
-            expect($table)->toContain('test/compiler-error')
-                ->toContain('Error: compilation failed')
-                ->toContain('N/A');
+            expect($table)->toBe(ReportGenerator::formatTable($results));
         });
     });
 
     describe('updateMarkdownFile()', function () {
-        test('updates OS and PHP version in markdown', function () {
+        test('remains compatible through BenchmarkRunner', function () {
             $markdown = <<<MARKDOWN
     # Benchmark
 
@@ -263,22 +246,8 @@ namespace {
             $content = file_get_contents($filePath);
 
             expect($content)->toContain('new/compiler')
-                ->toContain('0.5000');
-        });
-
-        test('does not fail on missing file', function () {
-            expect(fn () => BenchmarkRunner::updateMarkdownFile('/nonexistent/file.md', []))
-                ->not->toThrow(Exception::class);
-        });
-
-        test('does not fail when table is missing', function () {
-            $markdown = "# Benchmark\n\nNo table here";
-            $filePath = $this->tempDir . '/benchmark.md';
-
-            file_put_contents($filePath, $markdown);
-
-            expect(fn () => BenchmarkRunner::updateMarkdownFile($filePath, []))
-                ->not->toThrow(Exception::class);
+                ->toContain('0.5000')
+                ->and($content)->toContain(ReportGenerator::formatTable($results));
         });
     });
 
