@@ -97,7 +97,6 @@ class BenchmarkRunner
     private function benchmarkCompiler(string $name, callable $factory): array
     {
         $times               = [];
-        $maxMemDelta         = 0;
         $css                 = '';
         $sourceMap           = null;
         $shouldSaveSourceMap = $this->shouldSaveSourceMap($name);
@@ -105,21 +104,24 @@ class BenchmarkRunner
         try {
             $compiler = $this->resolveCompilerAdapter($name, $factory());
 
+            gc_collect_cycles();
+            memory_reset_peak_usage();
+            $memBaseline = memory_get_usage();
+
             $this->warmup($compiler);
 
             for ($i = 0; $i < $this->runs; $i++) {
-                $memBefore = memory_get_usage();
-                $start     = hrtime(true);
+                $start = hrtime(true);
 
                 $result = $this->compile($compiler, $shouldSaveSourceMap && $i === 0);
                 $css    = $result->css;
 
                 $sourceMap ??= $result->sourceMap;
 
-                $times[]     = (hrtime(true) - $start) / 1e9;
-                $memAfter    = memory_get_usage();
-                $maxMemDelta = max($maxMemDelta, $memAfter - $memBefore);
+                $times[] = (hrtime(true) - $start) / 1e9;
             }
+
+            $memDelta = (memory_get_peak_usage() - $memBaseline) / 1024 / 1024;
 
             $this->saveResults($name, $css, $sourceMap);
 
@@ -129,7 +131,7 @@ class BenchmarkRunner
             return [
                 'time'   => $cssSize !== null ? array_sum($times) / count($times) : 'Error',
                 'size'   => $cssSize,
-                'memory' => $maxMemDelta / 1024 / 1024,
+                'memory' => $memDelta,
             ];
         } catch (Throwable $e) {
             return [
