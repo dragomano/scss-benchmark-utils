@@ -10,6 +10,6 @@ final class UnsupportedCompilerException extends RuntimeException
 {
     public function __construct(string $name)
     {
-        parent::__construct("Compiler $name does not support compileFile or compileString");
+        parent::__construct("Compiler $name factory must return a CompilerAdapterInterface or a supported legacy compiler");
     }
 }

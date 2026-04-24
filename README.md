@@ -60,6 +60,8 @@ Run benchmarks for multiple SCSS compilers:
 <?php
 
 use Bugo\BenchmarkUtils\BenchmarkRunner;
+use Bugo\BenchmarkUtils\CompilationResult;
+use Bugo\BenchmarkUtils\CompilerAdapterInterface;
 use Bugo\BenchmarkUtils\ReportGenerator;
 use Bugo\BenchmarkUtils\ScssGenerator;
 use ScssPhp\ScssPhp\Compiler as ScssCompiler;
@@ -74,14 +76,39 @@ $results = (new BenchmarkRunner())
     ->setRuns(10)
     ->setWarmupRuns(2)
     ->setOutputDir(__DIR__)
-    ->addCompiler('scssphp/scssphp', function() {
+    ->addCompiler('scssphp/scssphp', function (): CompilerAdapterInterface {
         $compiler = new ScssCompiler();
         $compiler->setOutputStyle(OutputStyle::COMPRESSED);
 
-        return $compiler;
+        return new class ($compiler) implements CompilerAdapterInterface {
+            public function __construct(private readonly ScssCompiler $compiler) {}
+
+            public function warmup(?string $code, ?string $sourceFile): void
+            {
+                if ($sourceFile !== null) {
+                    $this->compiler->compileFile($sourceFile);
+
+                    return;
+                }
+
+                $this->compiler->compileString($code ?? '');
+            }
+
+            public function compile(?string $code, ?string $sourceFile, bool $includeSourceMap = true): CompilationResult
+            {
+                $result = $sourceFile !== null
+                    ? $this->compiler->compileFile($sourceFile)
+                    : $this->compiler->compileString($code ?? '');
+
+                return new CompilationResult(
+                    $result->getCss(),
+                    $includeSourceMap ? $result->getSourceMap() : null,
+                );
+            }
+        };
     })
-    ->addCompiler('another/compiler', function() {
-        return new AnotherCompiler();
+    ->addCompiler('another/compiler', function (): CompilerAdapterInterface {
+        return new AnotherCompilerAdapter();
     })
     ->run();
 
@@ -89,6 +116,9 @@ echo ReportGenerator::formatTable($results);
 
 ReportGenerator::updateMarkdownFile('benchmark.md', $results);
 ```
+
+`BenchmarkRunner` now expects each compiler factory to return a `CompilerAdapterInterface`.
+Legacy compilers with vendor-specific `compileString()` / `compileFile()` methods are still supported through a deprecated compatibility bridge.
 
 The generated SCSS includes:
 

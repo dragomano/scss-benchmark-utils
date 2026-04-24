@@ -103,7 +103,7 @@ class BenchmarkRunner
         $shouldSaveSourceMap = $this->shouldSaveSourceMap($name);
 
         try {
-            $compiler = $factory();
+            $compiler = $this->resolveCompilerAdapter($name, $factory());
 
             $this->warmup($compiler);
 
@@ -111,10 +111,10 @@ class BenchmarkRunner
                 $memBefore = memory_get_usage();
                 $start     = hrtime(true);
 
-                $result = $this->compile($compiler, $name, $shouldSaveSourceMap && $i === 0);
-                $css    = $result['css'] ?? $result;
+                $result = $this->compile($compiler, $shouldSaveSourceMap && $i === 0);
+                $css    = $result->css;
 
-                $sourceMap ??= $result['sourceMap'] ?? null;
+                $sourceMap ??= $result->sourceMap;
 
                 $times[]     = (hrtime(true) - $start) / 1e9;
                 $memAfter    = memory_get_usage();
@@ -140,58 +140,29 @@ class BenchmarkRunner
         }
     }
 
-    private function warmup(object $compiler): void
+    private function warmup(CompilerAdapterInterface $compiler): void
     {
-        $file = $this->sourceFile ?? '';
-
-        if ($file) {
-            for ($i = 0; $i < $this->warmupRuns; $i++) {
-                if (method_exists($compiler, 'compileFile')) {
-                    $compiler->compileFile($file);
-                }
-            }
-
-            return;
-        }
-
-        $scss = $this->code ?? '';
-
         for ($i = 0; $i < $this->warmupRuns; $i++) {
-            if (method_exists($compiler, 'compileString')) {
-                $compiler->compileString($scss);
-            }
+            $compiler->warmup($this->code, $this->sourceFile);
         }
     }
 
-    private function compile(object $compiler, string $name, bool $includeSourceMap = true): array
+    private function compile(CompilerAdapterInterface $compiler, bool $includeSourceMap = true): CompilationResult
     {
-        $file = $this->sourceFile ?? '';
+        return $compiler->compile($this->code, $this->sourceFile, $includeSourceMap);
+    }
 
-        if ($file && method_exists($compiler, 'compileFile')) {
-            return $this->normalizeCompileResult($compiler->compileFile($file), $includeSourceMap);
+    private function resolveCompilerAdapter(string $name, mixed $compiler): CompilerAdapterInterface
+    {
+        if ($compiler instanceof CompilerAdapterInterface) {
+            return $compiler;
         }
 
-        $scss = $this->code ?? '';
-
-        if (method_exists($compiler, 'compileString')) {
-            return $this->normalizeCompileResult($compiler->compileString($scss), $includeSourceMap);
+        if (is_object($compiler)) {
+            return new LegacyCompilerAdapter($compiler, $name);
         }
 
         throw new UnsupportedCompilerException($name);
-    }
-
-    private function normalizeCompileResult(mixed $result, bool $includeSourceMap): array
-    {
-        if (is_object($result) && method_exists($result, 'getCss')) {
-            return [
-                'css'       => $result->getCss(),
-                'sourceMap' => $includeSourceMap && method_exists($result, 'getSourceMap')
-                    ? $result->getSourceMap()
-                    : null,
-            ];
-        }
-
-        return ['css' => $result];
     }
 
     private function shouldSaveSourceMap(string $name): bool
